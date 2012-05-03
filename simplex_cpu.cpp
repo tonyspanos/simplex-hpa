@@ -7,12 +7,17 @@
 //===========================================================================//
 
 #include <iostream>
+#include <iomanip>
 #include <stdlib.h>
 #include <time.h>
 
 using namespace std;
 
 #define INDEX(x,y) ((x) + width * (y))
+
+#define MAX_ITER 100000
+
+// #define USE_KNOWN_MATRIX
 
 // #define DEBUG
 
@@ -35,18 +40,18 @@ void print_matrix (float * arr, int width, int height) {
   cout << "------------------------------------------------------------------------------\n";
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      cout.width(10);
+      cout.width(13);
       // Print out 0 if element is close to 0
       if ( arr[INDEX(x,y)] < 1e-6 && arr[INDEX(x,y)] > -1e-6) {
         cout << 0;
       } else {
-        cout << arr[INDEX(x,y)];
+        cout << setprecision (5) << arr[INDEX(x,y)];
       }
       if (x != width-1) {
         cout << ", ";
       }
     }
-    cout << endl;
+    cout << ";" << endl;
   }
   cout << "------------------------------------------------------------------------------\n\n";
 
@@ -204,6 +209,14 @@ int simplex_cpu (float *arr, int width, int height) {
 
   // Repeat until the bottom row is all positive
   while (!is_indicator_positive (arr, width, height)) {
+
+    // *** PARALLELIZE ME! ***
+    // If number of iterations exceed the threshold, no solutions were found
+    if (num_iterations > MAX_ITER) {
+      return num_iterations;
+    }
+
+    // *** PARALLELIZE ME! ***
     DBGPRINT("Iteration " << num_iterations);
     // Do the gaussian elimination part
     gaussian_eliminate (arr, width, height);
@@ -212,6 +225,7 @@ int simplex_cpu (float *arr, int width, int height) {
     #ifdef DEBUG
       print_matrix (arr, width, height);
     #endif
+
   }
 
   return num_iterations;
@@ -236,7 +250,11 @@ void initialize_matrix (float *arr, int width, int height) {
 
   for (int x = 0; x < (width - 1) / 2; x++) {
     for (int y = 0; y < height; y++) {
-      arr[INDEX(x,y)] = (rand() % 20) - 10;
+      if (y == height-1) {
+        arr[INDEX(x,y)] = (rand() % 20) - 10;
+      } else {
+        arr[INDEX(x,y)] = (rand() % 20);
+      }
     }
   }
 
@@ -251,8 +269,12 @@ void initialize_matrix (float *arr, int width, int height) {
     }
   }
 
-  for (int y = 0; y < height - 1; y++) {
-    arr[INDEX(width-1, y)] = (rand() % 20) - 10;
+  for (int y = 0; y < height; y++) {
+    if (y == height-1) {
+      arr[INDEX(width-1, y)] = 0;
+    } else {
+      arr[INDEX(width-1, y)] = (rand() % 20);
+    }
   }
 
 }
@@ -266,27 +288,37 @@ int main() {
 
   cout << "Starting Simplex CPU Calculations\n";
 
+#ifndef USE_KNOWN_MATRIX
   // Number of restrictions
-  int num_rest = 3;
+  int num_rest = 5;
 
   // Number of variables
+  int num_vars = 5;
+#else
+  int num_rest = 3;
   int num_vars = 3;
+#endif
 
   int width  = (2*num_vars) + 1;
   int height = num_rest + 1;
   int size   = width * height;
 
-  // This should be uncommented when initialize_matrix() is working
-  //float arr[size];
+  #ifndef USE_KNOWN_MATRIX
+    // This should be uncommented when initialize_matrix() is working
+    float * arr = (float*) malloc (sizeof(float) * size);
+  #endif
 
   // The array is stored in a 1D vector, where the elements can be accessed by
   // the INDEX(x,y) macro
  
   // Maximize
+  
+  #ifdef USE_KNOWN_MATRIX
   float arr[] = {  2,  1, 1, 1, 0, 0, 14,
                    4,  2, 3, 0, 1, 0, 28, 
                    2,  5, 5, 0, 0, 1, 30,
                   -1, -2, 1, 0, 0, 0, 0   };
+  #endif           
 
   /* 
   // Maximize
@@ -312,8 +344,10 @@ int main() {
   cout << "Width:  " << width << endl;
   cout << "Height: " << height << endl << endl;
 
-  // Not quite working as well as I'd like yet (Cody)
-  // initialize_matrix (arr, width, height);
+  #ifndef USE_KNOWN_MATRIX
+    // Not quite working as well as I'd like yet (Cody)
+    initialize_matrix (arr, width, height);
+  #endif
 
   cout << "Starting matrix:\n";
   print_matrix (arr, width, height);
@@ -321,8 +355,16 @@ int main() {
   // Do the calculation
   int num_iter = simplex_cpu (arr, width, height);
 
-  cout << "\nSolution matrix:\n";
-  print_matrix (arr, width, height);
+  if (num_iter > MAX_ITER) {
+    cout << "No solution was found\n";
+  } else {
+    cout << "\nSolution matrix:\n";
+    print_matrix (arr, width, height);
 
-  cout << "The solution took " << num_iter << " iterations\n";
+    cout << "The solution took " << num_iter << " iterations\n";
+  }
+
+  #ifndef USE_KNOWN_MATRIX
+    free (arr);
+  #endif
 }
