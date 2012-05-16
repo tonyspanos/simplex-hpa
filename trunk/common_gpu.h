@@ -22,7 +22,7 @@ using namespace std;
 #define MAX_ITER 100000
 
 // #define USE_KNOWN_MATRIX
-// #define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
   #define DBGPRINT(s) (cout << s << endl)

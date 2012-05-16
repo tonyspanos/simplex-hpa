@@ -49,7 +49,10 @@ void gaussian_eliminate (float *arr, int width, int height) {
     if (row != pivotRow && divider != 0) {
       scale = arr[row*width+pivotColumn];
       for (int col = 0; col < width; col++) {
+		//if (1) print_matrix(arr, width, height);
+		//if (1) printf("x: %d, y: %d, value: %f = %f- %f* (%f/%f)\n",col,row,arr[INDEX(col, row)],arr[INDEX(col, row)],arr[INDEX(col, pivotRow)],scale,divider);
         arr[INDEX(col, row)] -= (arr[INDEX(col, pivotRow)] * (scale / divider));
+		//if (1) printf("pivotColumn: %d, width: %d, height: %d, gausselim col:%d,row:%d,pivot row:%d,scale/div:%f\n",pivotColumn,width,height,col,row,pivotRow,scale/divider);
       }
     }
   }
@@ -83,9 +86,9 @@ int simplex_cpu (float *arr, int width, int height) {
     gaussian_eliminate (arr, width, height);
     // Increment the number of iterations
     num_iterations++;
-    #ifdef DEBUG
-      print_matrix (arr, width, height);
-    #endif
+    //#ifdef DEBUG
+     // print_matrix (arr, width, height);
+    //#endif
 
   }
 
@@ -111,7 +114,11 @@ int main() {
     float arr[] = {  2,  1, 1, 1, 0, 0, 14,
                      4,  2, 3, 0, 1, 0, 28, 
                      2,  5, 5, 0, 0, 1, 30,
-                    -1, -2, 1, 0, 0, 0, 0   };   
+                    -1, -2, 1, 0, 0, 0, 0   };  
+    float arr_gpu[] = {  2,  1, 1, 1, 0, 0, 14,
+                     4,  2, 3, 0, 1, 0, 28, 
+                     2,  5, 5, 0, 0, 1, 30,
+                    -1, -2, 1, 0, 0, 0, 0   };
     width = 7;
     height = 4;
 
@@ -138,7 +145,8 @@ int main() {
   #endif  
 
   #ifndef USE_KNOWN_MATRIX
-    float * arr = get_array_from_file ("adlittle", &width, &height, 0);
+    float * arr     = get_array_from_file ("afiro", &width, &height, 0);
+	float * arr_gpu = get_array_from_file ("afiro", &width, &height, 0);
   #endif
 
   // Print out relevant information
@@ -151,8 +159,9 @@ int main() {
   // Do the calculation on a CPU
   int num_iter_cpu = simplex_cpu (arr, width, height);
 
+  cout<<"CPU Done, Starting the experiment on GPU"<<endl;
   // Do the calculation on a GPU
-  int num_iter_gpu = simplex_gpu (arr, width, height);
+  //int num_iter_gpu = simplex_gpu (arr_gpu, width, height);
 
   // Determine whether a solution was found
   if (num_iter_cpu > MAX_ITER) {
