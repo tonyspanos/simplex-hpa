@@ -147,16 +147,19 @@ int main() {
   cout << "Starting matrix:\n";
   print_matrix (arr, width, height);
 
-  // Do the calculation
-  int num_iter = simplex_cpu (arr, width, height);
+  // Do the calculation on a CPU
+  int num_iter_cpu = simplex_cpu (arr, width, height);
+
+  // Do the calculation on a GPU
+  int num_iter_gpu = simplex_gpu (arr, width, height);
 
   // Determine whether a solution was found
-  if (num_iter > MAX_ITER) {
-    cout << "No solution was found in " << num_iter << " iterations\n";
+  if (num_iter_cpu > MAX_ITER) {
+    cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
     cout << "\nSolution matrix:\n";
     print_matrix (arr, width, height);
-    cout << "The solution took " << num_iter << " iterations\n";
+    cout << "The solution took " << num_iter_cpu << " iterations\n";
   }
 
   #ifndef USE_KNOWN_MATRIX
