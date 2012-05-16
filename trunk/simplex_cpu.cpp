@@ -106,42 +106,39 @@ int main() {
   int size   = width * height;
 
   #ifndef USE_KNOWN_MATRIX
-    // This should be uncommented when initialize_matrix() is working
     float * arr = (float*) malloc (sizeof(float) * size);
   #endif
 
   // The array is stored in a 1D vector, where the elements can be accessed by
   // the INDEX(x,y) macro
  
-  // Maximize
-  
   #ifdef USE_KNOWN_MATRIX
-  float arr[] = {  2,  1, 1, 1, 0, 0, 14,
-                   4,  2, 3, 0, 1, 0, 28, 
-                   2,  5, 5, 0, 0, 1, 30,
-                  -1, -2, 1, 0, 0, 0, 0   };
-  #endif           
+    // Maximize
+    float arr[] = {  2,  1, 1, 1, 0, 0, 14,
+                     4,  2, 3, 0, 1, 0, 28, 
+                     2,  5, 5, 0, 0, 1, 30,
+                    -1, -2, 1, 0, 0, 0, 0   };   
+    /* 
+      // Maximize
+      float arr[] = { 1,  1, 1, 0, 4,
+                      2,  1, 0, 1, 5,
+                     -3, -4, 0, 0, 0 };
+      */
 
-  /* 
-  // Maximize
-  float arr[] = { 1,  1, 1, 0, 4,
-                  2,  1, 0, 1, 5,
-                 -3, -4, 0, 0, 0 };
-  */
+      /*
+      // Minimize
+      float arr[] = { 1,  2, 1, 0, 6,
+                      3,  2, 0, 1, 12,
+                     -2,  1, 0, 0, 0 };
+      */
 
-  /*
-  // Minimize
-  float arr[] = { 1,  2, 1, 0, 6,
-                  3,  2, 0, 1, 12,
-                 -2,  1, 0, 0, 0 };
-  */
-
-  /*
-  // Minimize
-  float arr[] = { 1,  3, 1, 0, 2, 
-                  2,  2, 0, 1, 5, 
-                 -4, -3, 0, 0, 0 };
-  */
+      /*
+      // Minimize
+      float arr[] = { 1,  3, 1, 0, 2, 
+                      2,  2, 0, 1, 5, 
+                     -4, -3, 0, 0, 0 };
+    */
+  #endif  
 
   cout << "Width:  " << width << endl;
   cout << "Height: " << height << endl << endl;
