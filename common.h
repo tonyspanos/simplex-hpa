@@ -39,7 +39,7 @@ using namespace std;
 void print_matrix (float * arr, int width, int height) {
   // Don't print if height or width is too large
   if (height > 20 || width > 20) {
-    return;
+  //  return;
   }
   cout << "------------------------------------------------------------------------------\n";
   for (int y = 0; y < height; y++) {
