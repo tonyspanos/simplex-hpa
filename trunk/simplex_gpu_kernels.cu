@@ -11,7 +11,7 @@
 #include <iostream>
 #include "stdio.h" 
 
-#include "common.h"
+#include "common_gpu.h"
 
 //===========================================================================//
 // normalize_kernel
@@ -101,7 +101,7 @@ int simplex_gpu (float *arr, int width, int height) {
   /////////////////////////////////////////////////
   // Repeat until the bottom row is all positive //
   /////////////////////////////////////////////////
-  while (!is_indicator_positive (arr, width, height)) {
+  while (!is_indicator_positive_gpu (arr, width, height)) {
 
     // If number of iterations exceed the threshold, no solutions were found
     if (num_iterations > MAX_ITER) {
@@ -111,8 +111,8 @@ int simplex_gpu (float *arr, int width, int height) {
     DBGPRINT("Iteration " << num_iterations);
 
     // Do the gaussian elimination part
-    pivotColumn = get_pivot_column_index (arr,width,height);
-    pivotRow    = get_pivot_row_index (arr,width,height,pivotColumn);
+    pivotColumn = get_pivot_column_index_gpu (arr,width,height);
+    pivotRow    = get_pivot_row_index_gpu (arr,width,height,pivotColumn);
 
     // Normalization
     scale = arr[INDEX(pivotColumn, pivotRow)];

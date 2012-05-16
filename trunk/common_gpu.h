@@ -1,5 +1,5 @@
 //===========================================================================//
-// File Name:   common.h
+// File Name:   common_gpu.h
 // Authors:     Cody Cziesler, Praneeth Pulusani
 //
 // Description: Helper functions to be used for the Simplex Algorithm on both
@@ -7,8 +7,8 @@
 //
 //===========================================================================//
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef COMMON_GPU_H
+#define COMMON_GPU_H
 
 #include <iostream>
 #include <iomanip>
@@ -39,7 +39,7 @@ using namespace std;
 // @param  width      - the width of arr
 // @param  height     - the height of arr
 //===========================================================================//
-void print_matrix (float * arr, int width, int height) {
+void print_matrix_gpu (float * arr, int width, int height) {
   // Don't print if height or width is too large
   if (height > 20 || width > 20) {
   //  return;
@@ -76,7 +76,7 @@ void print_matrix (float * arr, int width, int height) {
 //
 // @return pivot_col  - the pivot column
 //===========================================================================//
-int get_pivot_column_index (float *arr, int width, int height) {
+int get_pivot_column_index_gpu (float *arr, int width, int height) {
   int pivot_col = 0;
   float min_val = 0;
 
@@ -117,7 +117,7 @@ int get_pivot_column_index (float *arr, int width, int height) {
 //
 // @return pivotRowIndex    - the pivot row
 //===========================================================================//
-int get_pivot_row_index(float *arr, int width, int height, int pivotColumnIndex) {
+int get_pivot_row_index_gpu (float *arr, int width, int height, int pivotColumnIndex) {
 
   int solutionColumnIndex = width - 1;
 
@@ -165,7 +165,7 @@ int get_pivot_row_index(float *arr, int width, int height, int pivotColumnIndex)
 //
 // @return            - true if positive, false otherwise
 //===========================================================================//
-bool is_indicator_positive(float *arr, int width, int height){
+bool is_indicator_positive_gpu (float *arr, int width, int height){
   int indicatorRowIndex = height - 1;
   bool is_ind_pos = true;
   for (int col = 0; col < width; col++){
@@ -187,7 +187,7 @@ bool is_indicator_positive(float *arr, int width, int height){
 // @param  width      - the width of arr
 // @param  height     - the height of arr
 //===========================================================================//
-void initialize_matrix (float *arr, int width, int height) {
+void initialize_matrix_gpu (float *arr, int width, int height) {
 
   // Seed random number generator
   srand ( (unsigned int) time(NULL) );
