@@ -86,7 +86,7 @@ __global__ void row_reduce_kernel (float* arr, int height, int width, int pivotR
 // @return num_iterations - the number of iterations it took to complete
 //===========================================================================//
 int simplex_gpu (float *arr, int width, int height) {
-	cout<<"hello there"<<endl;
+
   DBGPRINT("Simplex GPU function entered ");
   // A status flag
   cudaError_t status;
@@ -96,7 +96,6 @@ int simplex_gpu (float *arr, int width, int height) {
   int pivotRow, pivotColumn;
   int tile_size = 512;
   int size = width * height;
-
 
   // Number of bytes in the matrix. 
   int bytes = size * sizeof(float); 
@@ -121,7 +120,6 @@ int simplex_gpu (float *arr, int width, int height) {
   // Repeat until the bottom row is all positive //
   /////////////////////////////////////////////////
   while (!is_indicator_positive_gpu (arr, width, height)) {
-    cout<<"hello there1"<<endl;
     // If number of iterations exceed the threshold, no solutions were found
     if (num_iterations > MAX_ITER) {
       return num_iterations;
@@ -133,12 +131,11 @@ int simplex_gpu (float *arr, int width, int height) {
     pivotColumn = get_pivot_column_index_gpu (arr,width,height);
     pivotRow    = get_pivot_row_index_gpu (arr,width,height,pivotColumn);
 
-	DBGPRINT("Iteration " );
-	cout<<"hello there normalization"<<endl;
+	  DBGPRINT("Iteration " );
     // Normalization
     scale = arr[INDEX(pivotColumn, pivotRow)];
     normalize_kernel<<<dimGridN, dimBlockN>>>(arr_d, scale, height, width, pivotRow);
-	cudaThreadSynchronize();
+	  cudaThreadSynchronize();
 
     // Check for CUDA errors
     status = cudaGetLastError();
@@ -146,13 +143,12 @@ int simplex_gpu (float *arr, int width, int height) {
       cout << "Kernel failed: " << cudaGetErrorString(status) << endl;
       return -1;
     }
-	cout<<"hello there row reduction"<<endl;
-	DBGPRINT("Before row reduction ");
+	  DBGPRINT("Before row reduction ");
     // Row reduction
     row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn);
-	cudaThreadSynchronize();
+	  cudaThreadSynchronize();
 
-	//return 0;
+	  //return 0;
     // Check for CUDA errors
     status = cudaGetLastError();
     if (status != cudaSuccess) {
@@ -167,11 +163,9 @@ int simplex_gpu (float *arr, int width, int height) {
     #endif
 	 // Copy the host input data to the device 
 	 cudaMemcpy(arr, arr_d, bytes, cudaMemcpyDeviceToHost); 
-	  // print_matrix_gpu(arr,width,height);
   }
-print_matrix_gpu(arr,width,height);
 
-  cout << "Printing GPU solution\n";
+  //print_matrix_gpu(arr,width,height);
 
   return num_iterations;
 

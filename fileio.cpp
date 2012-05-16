@@ -16,14 +16,16 @@ using namespace std;
 //===========================================================================//
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max) {
 
+  cout << "here1\n";
+
 	//java call usage java -jar simplexparser.jar <filename without extension>
 	//reads in filename.csv, writes out filename.nlv
 
   string execCommand;
   if (is_max) {
-    execCommand = "java -jar simplexparser.jar " + fileprefix + " maximize";
+  //  execCommand = "java -jar simplexparser.jar " + fileprefix + " maximize";
   } else {
-    execCommand = "java -jar simplexparser.jar " + fileprefix;
+  //  execCommand = "java -jar simplexparser.jar " + fileprefix;
   }
 
 	system (execCommand.c_str());
@@ -35,6 +37,8 @@ float* get_array_from_file (string fileprefix, int *width, int *height, bool is_
 	//keeps track of elements, but probably not needed because rows*cols gives it anyway
 	int elem_counter;
 	float *matrix;
+
+
 
 	if (myfile.is_open()) {
 		//first line has number of rows

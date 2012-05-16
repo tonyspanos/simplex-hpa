@@ -8,11 +8,13 @@
 
 #include <iostream>
 #include <string>
-//#include <time.h>
+#include <ctime>
 
 #include "common.h"
 
 using namespace std;
+
+#define ITERS 1000
 
 // Declaration from fileio.cpp
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max);
@@ -110,43 +112,64 @@ int main() {
   // the INDEX(x,y) macro
  
   #ifdef USE_KNOWN_MATRIX
+    /*
     // Maximize
-    float arr[] = {  2,  1, 1, 1, 0, 0, 14,
-                     4,  2, 3, 0, 1, 0, 28, 
-                     2,  5, 5, 0, 0, 1, 30,
-                    -1, -2, 1, 0, 0, 0, 0   };  
-    float arr_gpu[] = {  2,  1, 1, 1, 0, 0, 14,
-                     4,  2, 3, 0, 1, 0, 28, 
-                     2,  5, 5, 0, 0, 1, 30,
-                    -1, -2, 1, 0, 0, 0, 0   };
+    float arr_ref[] = {  2,  1, 1, 1, 0, 0, 14,
+                         4,  2, 3, 0, 1, 0, 28, 
+                         2,  5, 5, 0, 0, 1, 30,
+                        -1, -2, 1, 0, 0, 0, 0   };  
     width = 7;
     height = 4;
+    */
+/*
+  float arr_ref[] = {  1,  0,  0,  0,  0, 1, 0, 0, 0, 0, 40,
+                       0,  1,  1,  0,  0, 0, 1, 0, 0, 0, 35,
+                       0,  0,  1,  1,  0, 0, 0, 1, 0, 0, 45,
+                       0,  1,  1,  0,  1, 0, 0, 0, 1, 0, 28,
+                      -5, -2, -3, -4,  2, 0, 0, 0, 0, 1, 0 };
+  width = 11;
+  height = 5;
+*/
+  float arr_ref[] = {  1,  0,  0,  0,  0, 1, 0, 0, 0, 0, 0, 40,
+                       1,  0,  0,  0,  0, 0, 1, 0, 0, 0, 0, 41,
+                       0,  1,  1,  0,  0, 0, 0, 1, 0, 0, 0, 35,
+                       0,  0,  1,  1,  0, 0, 0, 0, 1, 0, 0, 45,
+                       0,  1,  1,  0,  1, 0, 0, 0, 0, 1, 0, 28,
+                      -5, -2, -3, -4,  2, 0, 0, 0, 0, 0, 1, 0 };
+  width = 12;
+  height = 6;
 
     /* 
-      // Maximize
-      float arr[] = { 1,  1, 1, 0, 4,
-                      2,  1, 0, 1, 5,
-                     -3, -4, 0, 0, 0 };
-      */
-
-      /*
-      // Minimize
-      float arr[] = { 1,  2, 1, 0, 6,
-                      3,  2, 0, 1, 12,
-                     -2,  1, 0, 0, 0 };
-      */
-
-      /*
-      // Minimize
-      float arr[] = { 1,  3, 1, 0, 2, 
-                      2,  2, 0, 1, 5, 
-                     -4, -3, 0, 0, 0 };
+    // Maximize
+    float arr_ref[] = { 1,  1, 1, 0, 4,
+                    2,  1, 0, 1, 5,
+                   -3, -4, 0, 0, 0 };
+    width = 5;
+    height = 3;
     */
-  #endif  
 
-  #ifndef USE_KNOWN_MATRIX
-    float * arr     = get_array_from_file ("afiro", &width, &height, 0);
-	float * arr_gpu = get_array_from_file ("afiro", &width, &height, 0);
+    /*
+    // Minimize
+    float arr_ref[] = { 1,  2, 1, 0, 6,
+                    3,  2, 0, 1, 12,
+                   -2,  1, 0, 0, 0 };
+    width = 5;
+    height = 3;
+    */
+
+    /*
+    // Minimize
+    float arr_ref[] = { 1,  3, 1, 0, 2, 
+                    2,  2, 0, 1, 5, 
+                   -4, -3, 0, 0, 0 };
+    width = 5;
+    height = 3;
+    */
+  #else
+    // 50 works
+    // 500 doesn't
+    // 1000 doesn't
+    float * arr_ref  = get_array_from_file ("cody_100", &width, &height, 0);
   #endif
 
   // Print out relevant information
@@ -154,23 +177,62 @@ int main() {
   cout << "Height: " << height << endl << endl;
 
   cout << "Starting matrix:\n";
-  print_matrix (arr, width, height);
+  print_matrix (arr_ref, width, height);
+
+  // Variables to capture the runtime information
+  float tcpu, tgpu;
+  clock_t start, end;
+
+  int num_iter_cpu, num_iter_gpu;
+
+  float * arr     = (float*) malloc (sizeof(float) * width * height);
+  float * arr_gpu = (float*) malloc (sizeof(float) * width * height);
+
 
   // Do the calculation on a CPU
-  int num_iter_cpu = simplex_cpu (arr, width, height);
+  start = clock();
+  for (int i = 0; i < ITERS; i++) {
+    memcpy (arr, arr_ref, width*height*sizeof(float));
+    num_iter_cpu = simplex_cpu (arr, width, height);
+  }
+  end = clock();
 
-  cout<<"CPU Done, Starting the experiment on GPU"<<endl;
-  // Do the calculation on a GPU
-  //int num_iter_gpu = simplex_gpu (arr_gpu, width, height);
+  tcpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
 
   // Determine whether a solution was found
+  cout << "The CPU took " << tcpu << " seconds\n";
   if (num_iter_cpu > MAX_ITER) {
     cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
-    cout << "\nSolution matrix:\n";
-    print_matrix (arr, width, height);
+    cout << "Z = " << arr[width*height - 1] << endl;
     cout << "The solution took " << num_iter_cpu << " iterations\n";
+    cout << "\nCPU Solution matrix:\n";
+    print_matrix (arr, width, height);
   }
+
+  cout << endl << endl;
+
+  // Do the calculation on a GPU
+  start = clock();
+  for (int i = 0; i < ITERS; i++) {
+    memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
+    num_iter_gpu = simplex_gpu (arr_gpu, width, height);
+  }
+  end = clock();
+
+  tgpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
+
+  // Determine whether a solution was found
+  cout << "The GPU took " << tgpu << " seconds\n";
+  if (num_iter_cpu > MAX_ITER) {
+    cout << "No solution was found in " << num_iter_cpu << " iterations\n";
+  } else {
+    cout << "The solution took " << num_iter_cpu << " iterations\n";
+    cout << "\nGPU Solution matrix:\n";
+    print_matrix (arr_gpu, width, height);
+  }
+
+  cout << "Speedup (CPU/GPU) = " << tcpu/tgpu << endl;
 
   #ifndef USE_KNOWN_MATRIX
     free (arr);
