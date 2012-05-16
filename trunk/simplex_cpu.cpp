@@ -7,11 +7,15 @@
 //===========================================================================//
 
 #include <iostream>
+#include <string>
 //#include <time.h>
 
 #include "common.h"
+//#include "fileio.cpp"
 
 using namespace std;
+
+float* get_array_from_file (string fileprefix, int *width, int *height);
 
 //===========================================================================//
 // gaussian_eliminate
@@ -106,7 +110,7 @@ int main() {
   int size   = width * height;
 
   #ifndef USE_KNOWN_MATRIX
-    float * arr = (float*) malloc (sizeof(float) * size);
+    //float * arr = (float*) malloc (sizeof(float) * size);
   #endif
 
   // The array is stored in a 1D vector, where the elements can be accessed by
@@ -140,13 +144,14 @@ int main() {
     */
   #endif  
 
-  cout << "Width:  " << width << endl;
-  cout << "Height: " << height << endl << endl;
-
   #ifndef USE_KNOWN_MATRIX
     // Not quite working as well as I'd like yet (Cody)
-    initialize_matrix (arr, width, height);
+    //initialize_matrix (arr, width, height);
+    float * arr = get_array_from_file ("simplex", &width, &height);
   #endif
+
+  cout << "Width:  " << width << endl;
+  cout << "Height: " << height << endl << endl;
 
   cout << "Starting matrix:\n";
   print_matrix (arr, width, height);
