@@ -22,7 +22,7 @@
 // @param  scale      - arr[pivotRow * width + pivotColumn]
 // @param  height     - the height of arr
 //===========================================================================//
-__global__ void normalize_kernel (float* arr, float scale, int height) {
+__global__ void normalize_kernel (float* arr, float scale, int height, int width, int pivotRow) {
 
   // Indexing
   int yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
@@ -116,7 +116,7 @@ int simplex_gpu (float *arr, int width, int height) {
 
     // Normalization
     scale = arr[INDEX(pivotColumn, pivotRow)];
-    normalize_kernel<<<dimGridN, dimBlockB>>>(arr, scale, height);
+    normalize_kernel<<<dimGridN, dimBlockN>>>(arr, scale, height, width, pivotRow);
 
     // Check for CUDA errors
     status = cudaGetLastError();
