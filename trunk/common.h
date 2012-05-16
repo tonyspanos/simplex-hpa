@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <time.h>
 
 using namespace std;
 
@@ -174,14 +175,14 @@ bool is_indicator_positive(float *arr, int width, int height){
 void initialize_matrix (float *arr, int width, int height) {
 
   // Seed random number generator
-  srand ( time(NULL) );
+  srand ( (unsigned int) time(NULL) );
 
   for (int x = 0; x < (width - 1) / 2; x++) {
     for (int y = 0; y < height; y++) {
       if (y == height-1) {
-        arr[INDEX(x,y)] = (rand() % 20) - 10;
+        arr[INDEX(x,y)] = (float) (rand() % 20) - 10;
       } else {
-        arr[INDEX(x,y)] = (rand() % 20);
+        arr[INDEX(x,y)] = (float) (rand() % 20);
       }
     }
   }
@@ -201,7 +202,7 @@ void initialize_matrix (float *arr, int width, int height) {
     if (y == height-1) {
       arr[INDEX(width-1, y)] = 0;
     } else {
-      arr[INDEX(width-1, y)] = (rand() % 20);
+      arr[INDEX(width-1, y)] = (float) (rand() % 20);
     }
   }
 
