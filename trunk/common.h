@@ -19,9 +19,9 @@ using namespace std;
 
 #define INDEX(x,y) ((x) + width * (y))
 
-#define MAX_ITER 100000
+#define MAX_ITER 100
 
-// #define USE_KNOWN_MATRIX
+//#define USE_KNOWN_MATRIX
 // #define DEBUG
 
 #ifdef DEBUG
@@ -42,7 +42,7 @@ using namespace std;
 void print_matrix (float * arr, int width, int height) {
   // Don't print if height or width is too large
   if (height > 20 || width > 20) {
-  //  return;
+    return;
   }
   cout << "------------------------------------------------------------------------------\n";
   for (int y = 0; y < height; y++) {
