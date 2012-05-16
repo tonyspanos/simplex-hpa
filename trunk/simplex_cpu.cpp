@@ -155,7 +155,7 @@ int main() {
   int num_iter = simplex_cpu (arr, width, height);
 
   if (num_iter > MAX_ITER) {
-    cout << "No solution was found\n";
+    cout << "No solution was found in " << num_iter << " iterations\n";
   } else {
     cout << "\nSolution matrix:\n";
     print_matrix (arr, width, height);
