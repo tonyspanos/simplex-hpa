@@ -91,7 +91,7 @@ int get_pivot_column_index (float *arr, int width, int height) {
     // min_val with cur_val and set the pivot_col to the current x
     // value
     if ((cur_val <= min_val) || (x == 0)) {
-      DBGPRINT("swap!");
+      DBGPRINT("pivotCol swap!");
       min_val = cur_val;
       pivot_col = x;
     }
@@ -122,16 +122,28 @@ int get_pivot_row_index(float *arr, int width, int height, int pivotColumnIndex)
   // to current element is the lowest
   int pivotRowIndex = 0;
 
-  float lowestRatio = arr[INDEX(solutionColumnIndex, 0)] / arr[INDEX(pivotColumnIndex, 0)];
+  float lowestRatio;
+  
+  if (arr[INDEX(pivotColumnIndex, 0)] != 0) {
+    lowestRatio = arr[INDEX(solutionColumnIndex, 0)] / arr[INDEX(pivotColumnIndex, 0)];
+  } else {
+    lowestRatio = 100000;
+  }
 
   // h=1: because computed the first ratio already in the two lines above
   // h<height-1: do not consider the last row because it is the indicator row
   for (int h = 1; h < height - 1; h++){
-    float ratio = arr[INDEX(solutionColumnIndex, h)] / arr[INDEX(pivotColumnIndex, h)];
-    // Update the pivot row
-    if (ratio <= lowestRatio){
-      lowestRatio   = ratio;
-      pivotRowIndex = h;
+    DBGPRINT("h: " << h);
+    DBGPRINT("lowestRatio: " << lowestRatio);
+    DBGPRINT("pivotRowIndex: " << pivotRowIndex << endl);
+    if (arr[INDEX(pivotColumnIndex, h)] != 0) {
+      float ratio = arr[INDEX(solutionColumnIndex, h)] / arr[INDEX(pivotColumnIndex, h)];
+      // Update the pivot row
+      if (ratio <= lowestRatio){
+        lowestRatio   = ratio;
+        pivotRowIndex = h;
+        DBGPRINT("pivotRow swap!");
+      }
     }
   }
 

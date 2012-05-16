@@ -11,11 +11,11 @@
 //#include <time.h>
 
 #include "common.h"
-//#include "fileio.cpp"
 
 using namespace std;
 
-float* get_array_from_file (string fileprefix, int *width, int *height);
+// Declaration from fileio.cpp
+float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max);
 
 //===========================================================================//
 // gaussian_eliminate
@@ -34,11 +34,14 @@ void gaussian_eliminate (float *arr, int width, int height) {
 
   // Normalization
   scale = arr[pivotRow*width+pivotColumn];
+  //cout << "PC: " << pivotColumn << " PR: " << pivotRow << " SCALE: " << scale << endl;
   for (int col = 0; col < width; col++) {
     arr[INDEX(col, pivotRow)] /= scale;
   }
 
   float divider = arr[INDEX(pivotColumn, pivotRow)];
+  //cout << "index: " << INDEX(pivotColumn, pivotRow) << endl;
+  //cout << "PC: " << pivotColumn << " PR: " << pivotRow << " DIV: " << divider << endl;
 
   // Row reduction
   for (int row = 0; row < height; row++) {
@@ -97,21 +100,7 @@ int main() {
 
   cout << "Starting Simplex CPU Calculations\n";
 
-  #ifndef USE_KNOWN_MATRIX
-    int num_rest = 5; // Number of restrictions
-    int num_vars = 5; // Number of variables
-  #else
-    int num_rest = 3;
-    int num_vars = 3;
-  #endif
-
-  int width  = (2*num_vars) + 1;
-  int height = num_rest + 1;
-  int size   = width * height;
-
-  #ifndef USE_KNOWN_MATRIX
-    //float * arr = (float*) malloc (sizeof(float) * size);
-  #endif
+  int width, height;
 
   // The array is stored in a 1D vector, where the elements can be accessed by
   // the INDEX(x,y) macro
@@ -122,6 +111,9 @@ int main() {
                      4,  2, 3, 0, 1, 0, 28, 
                      2,  5, 5, 0, 0, 1, 30,
                     -1, -2, 1, 0, 0, 0, 0   };   
+    width = 7;
+    height = 4;
+
     /* 
       // Maximize
       float arr[] = { 1,  1, 1, 0, 4,
@@ -145,11 +137,10 @@ int main() {
   #endif  
 
   #ifndef USE_KNOWN_MATRIX
-    // Not quite working as well as I'd like yet (Cody)
-    //initialize_matrix (arr, width, height);
-    float * arr = get_array_from_file ("simplex", &width, &height);
+    float * arr = get_array_from_file ("adlittle", &width, &height, 0);
   #endif
 
+  // Print out relevant information
   cout << "Width:  " << width << endl;
   cout << "Height: " << height << endl << endl;
 
@@ -159,6 +150,7 @@ int main() {
   // Do the calculation
   int num_iter = simplex_cpu (arr, width, height);
 
+  // Determine whether a solution was found
   if (num_iter > MAX_ITER) {
     cout << "No solution was found in " << num_iter << " iterations\n";
   } else {
