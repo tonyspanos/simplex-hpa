@@ -16,6 +16,7 @@ using namespace std;
 
 // Declaration from fileio.cpp
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max);
+int simplex_gpu (float *arr, int width, int height);
 
 //===========================================================================//
 // gaussian_eliminate
