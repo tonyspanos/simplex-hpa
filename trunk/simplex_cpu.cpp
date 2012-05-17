@@ -14,7 +14,7 @@
 
 using namespace std;
 
-#define ITERS 1000
+#define ITERS 100
 
 // Declaration from fileio.cpp
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max);
@@ -169,7 +169,7 @@ int main() {
     // 50 works
     // 500 doesn't
     // 1000 doesn't
-    float * arr_ref  = get_array_from_file ("cody_100", &width, &height, 0);
+    float * arr_ref  = get_array_from_file ("cody_200", &width, &height, 0);
   #endif
 
   // Print out relevant information
@@ -188,7 +188,6 @@ int main() {
   float * arr     = (float*) malloc (sizeof(float) * width * height);
   float * arr_gpu = (float*) malloc (sizeof(float) * width * height);
 
-
   // Do the calculation on a CPU
   start = clock();
   for (int i = 0; i < ITERS; i++) {
@@ -200,7 +199,7 @@ int main() {
   tcpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
 
   // Determine whether a solution was found
-  cout << "The CPU took " << tcpu << " seconds\n";
+  cout << "The CPU took " << tcpu << " ms\n";
   if (num_iter_cpu > MAX_ITER) {
     cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
@@ -213,6 +212,9 @@ int main() {
   cout << endl << endl;
 
   // Do the calculation on a GPU
+  memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
+  num_iter_gpu = simplex_gpu (arr_gpu, width, height);
+
   start = clock();
   for (int i = 0; i < ITERS; i++) {
     memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
@@ -223,10 +225,11 @@ int main() {
   tgpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
 
   // Determine whether a solution was found
-  cout << "The GPU took " << tgpu << " seconds\n";
+  cout << "The GPU took " << tgpu << " ms\n";
   if (num_iter_cpu > MAX_ITER) {
     cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
+    cout << "Z = " << arr_gpu[width*height - 1] << endl;
     cout << "The solution took " << num_iter_cpu << " iterations\n";
     cout << "\nGPU Solution matrix:\n";
     print_matrix (arr_gpu, width, height);
