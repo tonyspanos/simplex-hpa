@@ -17,13 +17,11 @@
 
 using namespace std;
 
+// Defines used for the program
 #define INDEX(x,y) ((x) + width * (y))
-
 #define MAX_ITER 1000
 
-// #define USE_KNOWN_MATRIX
-//#define DEBUG
-
+// #define DEBUG
 #ifdef DEBUG
   #define DBGPRINT(s) (cout << s << endl)
 #else
@@ -31,7 +29,7 @@ using namespace std;
 #endif
 
 //===========================================================================//
-// print_matrix
+// print_matrix_gpu
 //
 // Prints the array in a nice-to-read format
 //
@@ -42,7 +40,7 @@ using namespace std;
 void print_matrix_gpu (float * arr, int width, int height) {
   // Don't print if height or width is too large
   if (height > 20 || width > 20) {
-  //  return;
+    //return;
   }
   cout << "------------------------------------------------------------------------------\n";
   for (int y = 0; y < height; y++) {
@@ -65,7 +63,7 @@ void print_matrix_gpu (float * arr, int width, int height) {
 }
 
 //===========================================================================//
-// get_pivot_column_index
+// get_pivot_column_index_gpu
 //
 // Find the most negative number on the bottom row. In case of a tie, select
 // the column farthest to the right
@@ -105,7 +103,7 @@ int get_pivot_column_index_gpu (float *arr, int width, int height) {
 }
 
 //===========================================================================//
-// get_pivot_row_index
+// get_pivot_row_index_gpu
 //
 // Gets the pivot row based on the ratio. In case of a tie, select the row 
 // furthest toward the bottom.
@@ -154,7 +152,7 @@ int get_pivot_row_index_gpu (float *arr, int width, int height, int pivotColumnI
 }
 
 //===========================================================================//
-// is_indicator_positive
+// is_indicator_positive_gpu
 //
 // Loop through the bottom row of arr to see if all of the values are 
 // positive
@@ -166,22 +164,22 @@ int get_pivot_row_index_gpu (float *arr, int width, int height, int pivotColumnI
 // @return            - true if positive, false otherwise
 //===========================================================================//
 bool is_indicator_positive_gpu (float *arr, int width, int height){
-  int indicatorRowIndex = height - 1;
-  bool is_ind_pos = true;
-  for (int col = 0; col < width; col++){
-    if (arr[INDEX(col, indicatorRowIndex)] < 0){
-      is_ind_pos = false;
+  // Loop through all columns in bottom row
+  for (int col = 0; col < width; col++) {
+    // If negative, break and return false
+    if (arr[INDEX(col, height - 1)] < 0) {
+      return false;
     }
   }
-  return is_ind_pos;
+  return true;
 }
 
 //===========================================================================//
-// initialize_matrix
+// initialize_matrix_gpu
 //
 // Initialize the values of the matrix to random integers.
 //
-// NOTE: This isn't working properly yet (CODY)
+// NOTE: This doesn't always give matrices that work (CODY)
 //
 // @param  arr        - the 1D array representation of the matrix
 // @param  width      - the width of arr
