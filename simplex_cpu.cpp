@@ -164,7 +164,7 @@ int main() {
     height = 3;
     */
   #else
-    float * arr_ref  = get_array_from_file ("cody_200", &width, &height, 0);
+    float * arr_ref  = get_array_from_file ("cody_1000", &width, &height, 0);
   #endif
 
   // Print out relevant information
