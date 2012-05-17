@@ -164,7 +164,7 @@ int main() {
     height = 3;
     */
   #else
-    float * arr_ref  = get_array_from_file ("cody_1000", &width, &height, 0);
+    float * arr_ref  = get_array_from_file ("cody_200", &width, &height, 0);
   #endif
 
   // Print out relevant information
@@ -204,19 +204,21 @@ int main() {
   // Page Locked Memory
   cout << "*** GPU zero-copy ***" << endl;
   float tgpu_pl = 0;
-  for (int i = 0; i < 1; i++) {
+  start = clock();
+  for (int i = 0; i < ITERS; i++) {
     memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
     float tmp_tgpu = 0;
-    num_iter_gpu = simplex_gpu_zero_copy (&tmp_tgpu);
+    simplex_gpu_zero_copy (&tmp_tgpu);
     tgpu_pl += tmp_tgpu;
   }
-  tgpu_pl /= 1;
+  end = clock();
+  tgpu_pl /= ITERS;
 
   // Do the calculation on a CPU
   start = clock();
   for (int i = 0; i < ITERS; i++) {
     memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
-    num_iter_gpu = simplex_cpu (arr_gpu, width, height);
+    num_iter_gpu = simplex_gpu (arr_gpu, width, height);
   }
   end = clock();
 

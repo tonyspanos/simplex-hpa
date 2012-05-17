@@ -228,11 +228,22 @@ int simplex_gpu_zero_copy (float *tgpu) {
 
   DBGPRINT("Simplex GPU function entered ");
 
+  // A status flag
+  cudaError_t status;
+
   // Check to see if the device supports zero-copy
   cudaDeviceProp prop;
   int whichDevice;
-  cudaGetDevice (&whichDevice);
-  cudaGetDeviceProperties (&prop, whichDevice);
+  status = cudaGetDevice (&whichDevice);
+  if (status != cudaSuccess) {
+    cout << "Get Device failed: " << cudaGetErrorString(status) << endl;
+    return -1;
+  }
+  status = cudaGetDeviceProperties (&prop, whichDevice);
+  if (status != cudaSuccess) {
+    cout << "Get Device Properties failed: " << cudaGetErrorString(status) << endl;
+    return -1;
+  }
   if (prop.canMapHostMemory != 1) {
     printf ("Device cannot map memory\n");
     return -1;
@@ -240,10 +251,7 @@ int simplex_gpu_zero_copy (float *tgpu) {
 
   // Get the height, width, and matrix
   int height, width;
-  float * arr = get_array_from_file ("cody_1000", &width, &height, 0);
-
-  // A status flag
-  cudaError_t status;
+  float * arr = get_array_from_file ("cody_200", &width, &height, 0);
 
   // Variables
   int num_iterations = 0;
@@ -274,7 +282,6 @@ int simplex_gpu_zero_copy (float *tgpu) {
 
   // Copy the array into the page-locked host array
   memcpy (arr_h, arr, bytes);
-  
 
   // Block and Grid dimensions
   int size_side_RR = 32;
@@ -311,9 +318,10 @@ int simplex_gpu_zero_copy (float *tgpu) {
     pivotColumn = get_pivot_column_index_gpu (arr_h,width,height);
     pivotRow    = get_pivot_row_index_gpu (arr_h,width,height,pivotColumn);
 
-    // Normalization
     scale = arr_h[INDEX(pivotColumn, pivotRow)];
-	  DBGPRINT("Before normalize kernel");
+
+    // Normalization
+    DBGPRINT("Before normalize kernel");
     normalize_kernel<<<dimGridN, dimBlockN>>>(arr_d, scale, height, width, pivotRow);
 	  cudaThreadSynchronize();
 
@@ -346,13 +354,11 @@ int simplex_gpu_zero_copy (float *tgpu) {
     #ifdef DEBUG
       print_matrix_gpu (arr_h, width, height);
     #endif
- 
+
   }
   end = clock();
 
-  // Copy the array back to the host
-  //memcpy (arr, arr_h, bytes);
-
+  // Get the information from arr_h
   cout << "Z: " << arr_h[width*height-1] << "\n";
   cout << "The solution took " << num_iterations << " iterations\n";
 
