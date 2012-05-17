@@ -16,10 +16,10 @@ using namespace std;
 
 #define ITERS 10
 
-// Declaration from fileio.cpp
+// Function declarations
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max);
 int simplex_gpu (float *arr, int width, int height);
-int simplex_gpu_page_locked_mem (float *tgpu);
+int simplex_gpu_zero_copy (float *tgpu);
 
 //===========================================================================//
 // gaussian_eliminate
@@ -31,45 +31,24 @@ int simplex_gpu_page_locked_mem (float *tgpu);
 // @param  height     - the height of arr
 //===========================================================================//
 void gaussian_eliminate (float *arr, int width, int height) {
-  float scale;
 
   int pivotColumn = get_pivot_column_index (arr,width,height);
   int pivotRow    = get_pivot_row_index (arr,width,height, pivotColumn);
 
   // Normalization
-  scale = arr[pivotRow*width+pivotColumn];
-  //cout << "PC: " << pivotColumn << " PR: " << pivotRow << " SCALE: " << scale << endl;
+  float scale = arr[pivotRow*width+pivotColumn];
   for (int col = 0; col < width; col++) {
     arr[INDEX(col, pivotRow)] /= scale;
-    /*
-        if (col == 0) {
-          for (int h = 0; h < height; h++) {
-            for (int w = 0; w < width; w++) {
-              printf("%f, ", arr[INDEX(w,h)]);
-            }
-            printf ("\n");
-          }
-          printf ("\n");
-        }
-        */
   }
 
   float divider = arr[INDEX(pivotColumn, pivotRow)];
-  //cout << "index: " << INDEX(pivotColumn, pivotRow) << endl;
-  //cout << "PC: " << pivotColumn << " PR: " << pivotRow << " DIV: " << divider << endl;
 
   // Row reduction
   for (int row = 0; row < height; row++) {
     if (row != pivotRow && divider != 0) {
       scale = arr[row*width+pivotColumn];
       for (int col = 0; col < width; col++) {
-
-		//if (1) print_matrix(arr, width, height);
-		//if (1) printf("x: %d, y: %d, value: %f = %f- %f* (%f/%f)\n",col,row,arr[INDEX(col, row)],arr[INDEX(col, row)],arr[INDEX(col, pivotRow)],scale,divider);
         arr[INDEX(col, row)] -= (arr[INDEX(col, pivotRow)] * (scale / divider));
-		//if (1) printf("pivotColumn: %d, width: %d, height: %d, gausselim col:%d,row:%d,pivot row:%d,scale/div:%f\n",pivotColumn,width,height,col,row,pivotRow,scale/divider);
-
-
       }
     }
   }
@@ -99,18 +78,22 @@ int simplex_cpu (float *arr, int width, int height) {
     }
 
     DBGPRINT("Iteration " << num_iterations);
+    
     // Do the gaussian elimination part
     gaussian_eliminate (arr, width, height);
+
     // Increment the number of iterations
     num_iterations++;
-    //#ifdef DEBUG
-     // print_matrix (arr, width, height);
-    //#endif
+    #ifdef DEBUG
+      print_matrix (arr, width, height);
+    #endif
 
   }
 
   return num_iterations;
 }
+
+float cuda_test (int size);
 
 //===========================================================================//
 // main
@@ -125,7 +108,6 @@ int main() {
 
   // The array is stored in a 1D vector, where the elements can be accessed by
   // the INDEX(x,y) macro
- 
   #ifdef USE_KNOWN_MATRIX
     /*
     // Maximize
@@ -136,23 +118,24 @@ int main() {
     width = 7;
     height = 4;
     */
-/*
-  float arr_ref[] = {  1,  0,  0,  0,  0, 1, 0, 0, 0, 0, 40,
-                       0,  1,  1,  0,  0, 0, 1, 0, 0, 0, 35,
-                       0,  0,  1,  1,  0, 0, 0, 1, 0, 0, 45,
-                       0,  1,  1,  0,  1, 0, 0, 0, 1, 0, 28,
-                      -5, -2, -3, -4,  2, 0, 0, 0, 0, 1, 0 };
-  width = 11;
-  height = 5;
-*/
-  float arr_ref[] = {  1,  0,  0,  0,  0, 1, 0, 0, 0, 0, 0, 40,
-                       1,  0,  0,  0,  0, 0, 1, 0, 0, 0, 0, 41,
-                       0,  1,  1,  0,  0, 0, 0, 1, 0, 0, 0, 35,
-                       0,  0,  1,  1,  0, 0, 0, 0, 1, 0, 0, 45,
-                       0,  1,  1,  0,  1, 0, 0, 0, 0, 1, 0, 28,
-                      -5, -2, -3, -4,  2, 0, 0, 0, 0, 0, 1, 0 };
-  width = 12;
-  height = 6;
+    /*
+    float arr_ref[] = {  1,  0,  0,  0,  0, 1, 0, 0, 0, 0, 40,
+                         0,  1,  1,  0,  0, 0, 1, 0, 0, 0, 35,
+                         0,  0,  1,  1,  0, 0, 0, 1, 0, 0, 45,
+                         0,  1,  1,  0,  1, 0, 0, 0, 1, 0, 28,
+                        -5, -2, -3, -4,  2, 0, 0, 0, 0, 1, 0 };
+    width = 11;
+    height = 5;
+    */
+
+    float arr_ref[] = {  1,  0,  0,  0,  0, 1, 0, 0, 0, 0, 0, 40,
+                         1,  0,  0,  0,  0, 0, 1, 0, 0, 0, 0, 41,
+                         0,  1,  1,  0,  0, 0, 0, 1, 0, 0, 0, 35,
+                         0,  0,  1,  1,  0, 0, 0, 0, 1, 0, 0, 45,
+                         0,  1,  1,  0,  1, 0, 0, 0, 0, 1, 0, 28,
+                        -5, -2, -3, -4,  2, 0, 0, 0, 0, 0, 1, 0 };
+    width = 12;
+    height = 6;
 
     /* 
     // Maximize
@@ -188,15 +171,14 @@ int main() {
   cout << "Width:  " << width << endl;
   cout << "Height: " << height << endl << endl;
 
-  //cout << "Starting matrix:\n";
-  //print_matrix (arr_ref, width, height);
-
   // Variables to capture the runtime information
   float tcpu, tgpu;
   clock_t start, end;
 
+  // Integers to hold the number of iterations returned from simplex_*
   int num_iter_cpu, num_iter_gpu;
 
+  // Allocate arrays
   float * arr     = (float*) malloc (sizeof(float) * width * height);
   float * arr_gpu = (float*) malloc (sizeof(float) * width * height);
 
@@ -208,31 +190,27 @@ int main() {
   }
   end = clock();
 
+  // CPU Printouts
   tcpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
-
-  // Determine whether a solution was found
-  
   cout << "*** CPU ***\n";
   if (num_iter_cpu > MAX_ITER) {
     cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
     cout << "Z = " << arr[width*height - 1] << endl;
     cout << "The solution took " << num_iter_cpu << " iterations\n";
-    //cout << "\nCPU Solution matrix:\n";
-    //print_matrix (arr, width, height);
   }
-
   cout << endl << endl;
 
   // Page Locked Memory
+  cout << "*** GPU zero-copy ***" << endl;
   float tgpu_pl = 0;
-  for (int i = 0; i < ITERS; i++) {
+  for (int i = 0; i < 1; i++) {
     memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
-    float tmp_tgpu;
-    num_iter_gpu = simplex_gpu_page_locked_mem (&tmp_tgpu); //(arr_gpu, width, height);
+    float tmp_tgpu = 0;
+    num_iter_gpu = simplex_gpu_zero_copy (&tmp_tgpu);
     tgpu_pl += tmp_tgpu;
   }
-  tgpu_pl /= ITERS;
+  tgpu_pl /= 1;
 
   // Do the calculation on a CPU
   start = clock();
@@ -242,25 +220,25 @@ int main() {
   }
   end = clock();
 
+  // GPU Printouts
   tgpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
-
-  cout << endl << "*** GPU ***\n";
-  if (num_iter_cpu > MAX_ITER) {
-    cout << "No solution was found in " << num_iter_cpu << " iterations\n";
+  cout << endl << endl << "*** GPU ***\n";
+  if (num_iter_gpu > MAX_ITER) {
+    cout << "No solution was found in " << num_iter_gpu << " iterations\n";
   } else {
     cout << "Z = " << arr_gpu[width*height - 1] << endl;
-    cout << "The solution took " << num_iter_cpu << " iterations\n" << endl << endl << endl;
-    //cout << "\nGPU Solution matrix:\n";
-    //print_matrix (arr_gpu, width, height);
+    cout << "The solution took " << num_iter_gpu << " iterations\n" << endl << endl;
   }
 
+  // Final Printouts
+  cout << "-----------------------------------------------------\n";
   cout << "The CPU took " << tcpu << " ms" << endl << endl;
 
   cout << "The GPU took " << tgpu << " ms" << endl;
   cout << "Speedup (CPU/GPU) = " << tcpu/tgpu << endl << endl;
 
-  cout << "The GPU (page-locked) took " << tgpu_pl << " ms" << endl;
-  cout << "Speedup (CPU/GPU_PL) = " << tcpu/tgpu_pl << endl;
+  cout << "The GPU (zero-copy) took " << tgpu_pl << " ms" << endl;
+  cout << "Speedup (CPU/GPU_ZC) = " << tcpu/tgpu_pl << endl;
 
   #ifndef USE_KNOWN_MATRIX
     free (arr);

@@ -17,8 +17,8 @@
 
 using namespace std;
 
+// Defines used for the program
 #define INDEX(x,y) ((x) + width * (y))
-
 #define MAX_ITER 1000
 
 // #define USE_KNOWN_MATRIX
@@ -117,7 +117,7 @@ int get_pivot_column_index (float *arr, int width, int height) {
 //
 // @return pivotRowIndex    - the pivot row
 //===========================================================================//
-int get_pivot_row_index(float *arr, int width, int height, int pivotColumnIndex) {
+int get_pivot_row_index (float *arr, int width, int height, int pivotColumnIndex) {
 
   int solutionColumnIndex = width - 1;
 
@@ -165,15 +165,15 @@ int get_pivot_row_index(float *arr, int width, int height, int pivotColumnIndex)
 //
 // @return            - true if positive, false otherwise
 //===========================================================================//
-bool is_indicator_positive(float *arr, int width, int height){
-  int indicatorRowIndex = height - 1;
-  bool is_ind_pos = true;
-  for (int col = 0; col < width; col++){
-    if (arr[INDEX(col, indicatorRowIndex)] < 0){
-      is_ind_pos = false;
+bool is_indicator_positive (float *arr, int width, int height){
+  // Loop through all columns in bottom row
+  for (int col = 0; col < width; col++) {
+    // If negative, break and return false
+    if (arr[INDEX(col, height - 1)] < 0) {
+      return false;
     }
   }
-  return is_ind_pos;
+  return true;
 }
 
 //===========================================================================//
@@ -181,7 +181,7 @@ bool is_indicator_positive(float *arr, int width, int height){
 //
 // Initialize the values of the matrix to random integers.
 //
-// NOTE: This isn't working properly yet (CODY)
+// NOTE: This doesn't always give matrices that work (CODY)
 //
 // @param  arr        - the 1D array representation of the matrix
 // @param  width      - the width of arr
