@@ -44,12 +44,12 @@ float* get_array_from_file (string fileprefix, int *width, int *height, bool is_
 		//first line has number of rows
 		getline (myfile,line);
 		rows = atoi(line.c_str());
-    cout << "ROWS: " << rows << endl;
+    //cout << "ROWS: " << rows << endl;
 
 		//seccond line has number of cols
 		getline (myfile,line);
 		cols = atoi(line.c_str());
-    cout << "COLS: " << cols << endl;
+    //cout << "COLS: " << cols << endl;
 
 		elem_counter = 0;
 
@@ -64,8 +64,8 @@ float* get_array_from_file (string fileprefix, int *width, int *height, bool is_
 		}
 		myfile.close();
 
-    cout << elem_counter << endl;
-    cout << (rows * cols) << endl;
+    //cout << elem_counter << endl;
+    //cout << (rows * cols) << endl;
 
     /*
 		//print the matrix to test if it read the file correctly
