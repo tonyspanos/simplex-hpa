@@ -60,7 +60,7 @@ __global__ void normalize_kernel (float* arr, float scale, int height, int width
 // @param  pivotColumn - the pivot column
 // @param  divider     - arr[INDEX(pivotColumn, PivotRow)]
 //===========================================================================//
-__global__ void row_reduce_kernel (float* arr, int height, int width, int pivotRow, int pivotColumn, float divider) {
+__global__ void row_reduce_kernel (float* arr, int height, int width, int pivotRow, int pivotColumn) { //, float divider) {
 
   // Indexing
   long xId = threadIdx.x + (blockIdx.x * blockDim.x); // Column
@@ -70,13 +70,10 @@ __global__ void row_reduce_kernel (float* arr, int height, int width, int pivotR
   if ( (yId >= height) || (xId >= width) || (yId == pivotRow) ) {
     return;
   }
-  
-  // Find the scale (will be different for each row)
-  float scale = arr[INDEX(pivotColumn, yId)];
 
   // Row Reduction for each pixel
-  arr[INDEX(xId, yId)] -= (arr[INDEX(xId, pivotRow)] * (scale / divider));
-
+  arr[INDEX(xId, yId)] = arr[INDEX(xId, yId)] - (arr[INDEX(xId, pivotRow)] * 
+    (arr[INDEX(pivotColumn, yId)] / arr[INDEX(pivotColumn, pivotRow)]));
 }
 
 //===========================================================================//
@@ -126,7 +123,7 @@ int simplex_gpu (float *arr, int width, int height) {
 
   // Block and Grid dimensions
   int size_side_RR = 32;
-  int tile_size_N  = 256;
+  int tile_size_N  = 512;
   long dim_size_RR = (long)ceil(size / (float)(size_side_RR*size_side_RR));
   long dim_size_N  = (long)ceil(size / (float)tile_size_N);
 
@@ -138,11 +135,16 @@ int simplex_gpu (float *arr, int width, int height) {
   dim3 dimGridN(1, dim_size_N);
   dim3 dimBlockN(1, tile_size_N);
 
+  // Variables to capture the runtime information
+  clock_t start, end; //, norm_k_start, norm_k_end, row_k_start, row_k_end, p_start, p_end;
+  float total_time = 0;
+  
   /////////////////////////////////////////////////
   // Repeat until the bottom row is all positive //
   /////////////////////////////////////////////////
   while (!is_indicator_positive_gpu (arr, width, height)) {
 
+    start = clock();
     // If number of iterations exceed the threshold, no solutions were found
     if (num_iterations > MAX_ITER) {
       return num_iterations;
@@ -151,6 +153,7 @@ int simplex_gpu (float *arr, int width, int height) {
     DBGPRINT("Iteration " << num_iterations);
 
     // Do the gaussian elimination part
+
     pivotColumn = get_pivot_column_index_gpu (arr,width,height);
     pivotRow    = get_pivot_row_index_gpu (arr,width,height,pivotColumn);
 
@@ -159,6 +162,7 @@ int simplex_gpu (float *arr, int width, int height) {
 	  DBGPRINT("Before normalize kernel");
     normalize_kernel<<<dimGridN, dimBlockN>>>(arr_d, scale, height, width, pivotRow);
 	  cudaThreadSynchronize();
+
 
     // Check for CUDA errors
     status = cudaGetLastError();
@@ -172,8 +176,10 @@ int simplex_gpu (float *arr, int width, int height) {
 
     // Row reduction
 	  DBGPRINT("Before row reduction kernel");
-    row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn, divider);
-	  cudaThreadSynchronize();
+
+    row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn); //, divider);
+    // Synch here before the mem copy
+    cudaThreadSynchronize();
 
     // Check for CUDA errors
     status = cudaGetLastError();
@@ -189,6 +195,9 @@ int simplex_gpu (float *arr, int width, int height) {
      // print_matrix_gpu (arr, width, height);
     #endif
 
+    end = clock();
+    total_time += (end-start);
+
 	  // Copy the host input data to the device 
 	  status = cudaMemcpy(arr, arr_d, bytes, cudaMemcpyDeviceToHost); 
     if (status != cudaSuccess) {
@@ -199,6 +208,8 @@ int simplex_gpu (float *arr, int width, int height) {
 
   // Free to prevent out-of-memory error
   cudaFree (arr_d);
+
+  cout << "GPU Computation time: " << (float)total_time * 1000 / (float)CLOCKS_PER_SEC << " ms\n";
 
   return num_iterations;
 
@@ -251,7 +262,7 @@ int simplex_gpu_zero_copy (float *tgpu) {
 
   // Get the height, width, and matrix
   int height, width;
-  float * arr = get_array_from_file ("cody_200", &width, &height, 0);
+  float * arr = get_array_from_file ("cody_1000", &width, &height, 0);
 
   // Variables
   int num_iterations = 0;
@@ -265,7 +276,7 @@ int simplex_gpu_zero_copy (float *tgpu) {
   // Pointers to the device arrays 
   float *arr_d, *arr_h; 
 
-  // Allocate memory on the device to store each matrix 
+  // Allocate memory on the host to store each matrix 
   status = cudaHostAlloc( (void**) &arr_h, bytes, cudaHostAllocMapped);
   if (status != cudaSuccess) {
     cout << "Malloc failed: " << cudaGetErrorString(status) << endl;
@@ -338,7 +349,7 @@ int simplex_gpu_zero_copy (float *tgpu) {
 
     // Row reduction
 	  DBGPRINT("Before row reduction kernel");
-    row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn, divider);
+    row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn); //, divider);
 	  cudaThreadSynchronize();
 
     // Check for CUDA errors
