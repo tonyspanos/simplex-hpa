@@ -21,7 +21,7 @@ using namespace std;
 
 #define MAX_ITER 1000
 
-//#define USE_KNOWN_MATRIX
+// #define USE_KNOWN_MATRIX
 // #define DEBUG
 
 #ifdef DEBUG

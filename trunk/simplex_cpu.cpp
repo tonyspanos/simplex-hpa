@@ -14,11 +14,12 @@
 
 using namespace std;
 
-#define ITERS 100
+#define ITERS 10
 
 // Declaration from fileio.cpp
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max);
 int simplex_gpu (float *arr, int width, int height);
+int simplex_gpu_page_locked_mem (float *tgpu);
 
 //===========================================================================//
 // gaussian_eliminate
@@ -40,6 +41,17 @@ void gaussian_eliminate (float *arr, int width, int height) {
   //cout << "PC: " << pivotColumn << " PR: " << pivotRow << " SCALE: " << scale << endl;
   for (int col = 0; col < width; col++) {
     arr[INDEX(col, pivotRow)] /= scale;
+    /*
+        if (col == 0) {
+          for (int h = 0; h < height; h++) {
+            for (int w = 0; w < width; w++) {
+              printf("%f, ", arr[INDEX(w,h)]);
+            }
+            printf ("\n");
+          }
+          printf ("\n");
+        }
+        */
   }
 
   float divider = arr[INDEX(pivotColumn, pivotRow)];
@@ -51,10 +63,13 @@ void gaussian_eliminate (float *arr, int width, int height) {
     if (row != pivotRow && divider != 0) {
       scale = arr[row*width+pivotColumn];
       for (int col = 0; col < width; col++) {
+
 		//if (1) print_matrix(arr, width, height);
 		//if (1) printf("x: %d, y: %d, value: %f = %f- %f* (%f/%f)\n",col,row,arr[INDEX(col, row)],arr[INDEX(col, row)],arr[INDEX(col, pivotRow)],scale,divider);
         arr[INDEX(col, row)] -= (arr[INDEX(col, pivotRow)] * (scale / divider));
 		//if (1) printf("pivotColumn: %d, width: %d, height: %d, gausselim col:%d,row:%d,pivot row:%d,scale/div:%f\n",pivotColumn,width,height,col,row,pivotRow,scale/divider);
+
+
       }
     }
   }
@@ -166,18 +181,15 @@ int main() {
     height = 3;
     */
   #else
-    // 50 works
-    // 500 doesn't
-    // 1000 doesn't
-    float * arr_ref  = get_array_from_file ("cody_200", &width, &height, 0);
+    float * arr_ref  = get_array_from_file ("cody_1000", &width, &height, 0);
   #endif
 
   // Print out relevant information
   cout << "Width:  " << width << endl;
   cout << "Height: " << height << endl << endl;
 
-  cout << "Starting matrix:\n";
-  print_matrix (arr_ref, width, height);
+  //cout << "Starting matrix:\n";
+  //print_matrix (arr_ref, width, height);
 
   // Variables to capture the runtime information
   float tcpu, tgpu;
@@ -199,43 +211,56 @@ int main() {
   tcpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
 
   // Determine whether a solution was found
-  cout << "The CPU took " << tcpu << " ms\n";
+  
+  cout << "*** CPU ***\n";
   if (num_iter_cpu > MAX_ITER) {
     cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
     cout << "Z = " << arr[width*height - 1] << endl;
     cout << "The solution took " << num_iter_cpu << " iterations\n";
-    cout << "\nCPU Solution matrix:\n";
-    print_matrix (arr, width, height);
+    //cout << "\nCPU Solution matrix:\n";
+    //print_matrix (arr, width, height);
   }
 
   cout << endl << endl;
 
-  // Do the calculation on a GPU
-  memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
-  num_iter_gpu = simplex_gpu (arr_gpu, width, height);
+  // Page Locked Memory
+  float tgpu_pl = 0;
+  for (int i = 0; i < ITERS; i++) {
+    memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
+    float tmp_tgpu;
+    num_iter_gpu = simplex_gpu_page_locked_mem (&tmp_tgpu); //(arr_gpu, width, height);
+    tgpu_pl += tmp_tgpu;
+  }
+  tgpu_pl /= ITERS;
 
+  // Do the calculation on a CPU
   start = clock();
   for (int i = 0; i < ITERS; i++) {
     memcpy (arr_gpu, arr_ref, width*height*sizeof(float));
-    num_iter_gpu = simplex_gpu (arr_gpu, width, height);
+    num_iter_gpu = simplex_cpu (arr_gpu, width, height);
   }
   end = clock();
 
   tgpu = (float)(end - start) * 1000 / (float)CLOCKS_PER_SEC / ITERS;
 
-  // Determine whether a solution was found
-  cout << "The GPU took " << tgpu << " ms\n";
+  cout << endl << "*** GPU ***\n";
   if (num_iter_cpu > MAX_ITER) {
     cout << "No solution was found in " << num_iter_cpu << " iterations\n";
   } else {
     cout << "Z = " << arr_gpu[width*height - 1] << endl;
-    cout << "The solution took " << num_iter_cpu << " iterations\n";
-    cout << "\nGPU Solution matrix:\n";
-    print_matrix (arr_gpu, width, height);
+    cout << "The solution took " << num_iter_cpu << " iterations\n" << endl << endl << endl;
+    //cout << "\nGPU Solution matrix:\n";
+    //print_matrix (arr_gpu, width, height);
   }
 
-  cout << "Speedup (CPU/GPU) = " << tcpu/tgpu << endl;
+  cout << "The CPU took " << tcpu << " ms" << endl << endl;
+
+  cout << "The GPU took " << tgpu << " ms" << endl;
+  cout << "Speedup (CPU/GPU) = " << tcpu/tgpu << endl << endl;
+
+  cout << "The GPU (page-locked) took " << tgpu_pl << " ms" << endl;
+  cout << "Speedup (CPU/GPU_PL) = " << tcpu/tgpu_pl << endl;
 
   #ifndef USE_KNOWN_MATRIX
     free (arr);
