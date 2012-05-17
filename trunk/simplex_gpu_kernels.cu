@@ -25,8 +25,7 @@
 // @param  height     - the height of arr
 //===========================================================================//
 __global__ void normalize_kernel (float* arr, float scale, int height, int width, int pivotRow) {
-  //printf("kernel\n");
-	
+
   // Indexing
   long yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
 
@@ -49,12 +48,11 @@ __global__ void normalize_kernel (float* arr, float scale, int height, int width
 // @param  divider    - arr[INDEX(pivotColumn, PivotRow)]
 // @param  height     - the height of arr
 //===========================================================================//
-__global__ void row_reduce_kernel (float* arr, int height, int width, int pivotRow, int pivotColumn) {
+__global__ void row_reduce_kernel (float* arr, int height, int width, int pivotRow, int pivotColumn, float divider) {
 
   // Indexing
   long xId = threadIdx.x + (blockIdx.x * blockDim.x); // Column
   long yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
-  float scale;
 
   // Skip if not within size, or on pivotRow
   if ( (yId >= height) || (xId >= width) || (yId == pivotRow) ) {
@@ -62,15 +60,10 @@ __global__ void row_reduce_kernel (float* arr, int height, int width, int pivotR
   }
   
   // Find the scale (will be different for each row
-  scale = arr[INDEX(pivotColumn, yId)];
+  float scale = arr[INDEX(pivotColumn, yId)];
 
-  float divider = arr[INDEX(pivotColumn, pivotRow)];
   // Row Reduction for each pixel
-  //printf("x: %d, y: %d, value: %f = %f- %f* (%f/%f)\n",xId,yId,arr[INDEX(xId, yId)],arr[INDEX(xId, yId)],arr[INDEX(xId, pivotRow)],scale,divider);
-  arr[INDEX(xId, yId)] -= (arr[INDEX(xId, pivotRow)] * (scale / divider));
-
-  //printf("pivotColumn: %d, width: %d, height: %d, gausselim col:%d,row:%d,pivot row:%d,scale/div:%f\n",pivotColumn, width,height,xId,yId,pivotRow,scale/divider);
-
+  arr[INDEX(xId, yId)] -= (arr[INDEX(xId, pivotRow)] * (scale * divider));
 
 }
 
@@ -164,8 +157,11 @@ int simplex_gpu (float *arr, int width, int height) {
     }
 
 	  DBGPRINT("Before row reduction ");
+    // Do the division outside of the kernel
+    float divider = 1 / arr[INDEX(pivotColumn, pivotRow)];
+
     // Row reduction
-    row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn);
+    row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn, divider);
 	  cudaThreadSynchronize();
 
     // Check for CUDA errors
