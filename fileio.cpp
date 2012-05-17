@@ -16,7 +16,7 @@ using namespace std;
 //===========================================================================//
 float* get_array_from_file (string fileprefix, int *width, int *height, bool is_max) {
 
-  cout << "here1\n";
+
 
 	//java call usage java -jar simplexparser.jar <filename without extension>
 	//reads in filename.csv, writes out filename.nlv
@@ -28,7 +28,7 @@ float* get_array_from_file (string fileprefix, int *width, int *height, bool is_
   //  execCommand = "java -jar simplexparser.jar " + fileprefix;
   }
 
-	system (execCommand.c_str());
+	//system (execCommand.c_str());
 	string line;
 	string nlvfilename = fileprefix+".nlv";
 	ifstream myfile (nlvfilename.c_str());

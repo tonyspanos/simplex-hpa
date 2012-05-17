@@ -28,7 +28,7 @@ __global__ void normalize_kernel (float* arr, float scale, int height, int width
   //printf("kernel\n");
 	
   // Indexing
-  int yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
+  long yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
 
   // Skip if not within size
   if (yId >= width) {
@@ -52,8 +52,8 @@ __global__ void normalize_kernel (float* arr, float scale, int height, int width
 __global__ void row_reduce_kernel (float* arr, int height, int width, int pivotRow, int pivotColumn) {
 
   // Indexing
-  int xId = threadIdx.x + (blockIdx.x * blockDim.x); // Column
-  int yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
+  long xId = threadIdx.x + (blockIdx.x * blockDim.x); // Column
+  long yId = threadIdx.y + (blockIdx.y * blockDim.y); // Row
   float scale;
 
   // Skip if not within size, or on pivotRow
@@ -94,27 +94,46 @@ int simplex_gpu (float *arr, int width, int height) {
   int num_iterations = 0;
   float scale;
   int pivotRow, pivotColumn;
-  int tile_size = 512;
-  int size = width * height;
+
+  long size = width * height;
 
   // Number of bytes in the matrix. 
   int bytes = size * sizeof(float); 
   // Pointers to the device arrays 
   float *arr_d; 
   // Allocate memory on the device to store each matrix 
-  cudaMalloc((void**) &arr_d, bytes); 
-  // Copy the host input data to the device 
-  cudaMemcpy(arr_d, arr, bytes, cudaMemcpyHostToDevice); 
+  status = cudaMalloc((void**) &arr_d, bytes); 
+  if (status != cudaSuccess) {
+    cout << "Malloc Kernel failed: " << cudaGetErrorString(status) << endl;
+    return -1;
+  }
 
-  int dim_size = (int)ceil((float)size / (float)tile_size);
+  // Copy the host input data to the device 
+  status = cudaMemcpy(arr_d, arr, bytes, cudaMemcpyHostToDevice); 
+  if (status != cudaSuccess) {
+    cout << "Memcpy 1 Kernel failed: " << cudaGetErrorString(status) << endl;
+    return -1;
+  }
+
+  int tile_size = 512;
+  int tile_size_N = 256;
+  long dim_size   = (long)ceil(size / (float)tile_size);
+  long dim_size_N = (long)ceil(size / (float)tile_size_N);
+
+  /*
+  cout << "SIZE:        " << size << endl;
+  cout << "TILE_SIZE_N: " << tile_size_N << endl;
+  cout << "DIM SIZE:    " << dim_size << endl;
+  cout << "DIM SIZE_N:  " << dim_size_N << endl;
+  */
 
   // Row Reduction Dimensions (2D)
-  dim3 dimGridRR(tile_size, tile_size);
-  dim3 dimBlockRR(dim_size, dim_size);
+  dim3 dimGridRR(dim_size, dim_size);
+  dim3 dimBlockRR(16, 16);
 
   // Normalize Dimensions (1D)
-  dim3 dimGridN(1, tile_size);
-  dim3 dimBlockN(1, dim_size);
+  dim3 dimGridN(1, dim_size_N);
+  dim3 dimBlockN(1, tile_size_N);
 
   /////////////////////////////////////////////////
   // Repeat until the bottom row is all positive //
@@ -140,19 +159,19 @@ int simplex_gpu (float *arr, int width, int height) {
     // Check for CUDA errors
     status = cudaGetLastError();
     if (status != cudaSuccess) {
-      cout << "Kernel failed: " << cudaGetErrorString(status) << endl;
+      cout << "Normalize Kernel failed: " << cudaGetErrorString(status) << endl;
       return -1;
     }
+
 	  DBGPRINT("Before row reduction ");
     // Row reduction
     row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn);
 	  cudaThreadSynchronize();
 
-	  //return 0;
     // Check for CUDA errors
     status = cudaGetLastError();
     if (status != cudaSuccess) {
-      cout << "Kernel failed: " << cudaGetErrorString(status) << endl;
+      cout << "Row Reduce Kernel failed: " << cudaGetErrorString(status) << endl;
       return -1;
     }
 
@@ -161,9 +180,16 @@ int simplex_gpu (float *arr, int width, int height) {
     #ifdef DEBUG
      // print_matrix_gpu (arr, width, height);
     #endif
-	 // Copy the host input data to the device 
-	 cudaMemcpy(arr, arr_d, bytes, cudaMemcpyDeviceToHost); 
+	  // Copy the host input data to the device 
+	  status = cudaMemcpy(arr, arr_d, bytes, cudaMemcpyDeviceToHost); 
+    if (status != cudaSuccess) {
+      cout << "Memcpy 2 Kernel failed: " << cudaGetErrorString(status) << endl;
+      return -1;
+    }
   }
+
+  // Free to prevent out-of-memory error
+  cudaFree (arr_d);
 
   //print_matrix_gpu(arr,width,height);
 

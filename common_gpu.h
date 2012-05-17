@@ -19,7 +19,7 @@ using namespace std;
 
 #define INDEX(x,y) ((x) + width * (y))
 
-#define MAX_ITER 100
+#define MAX_ITER 1000
 
 // #define USE_KNOWN_MATRIX
 //#define DEBUG
