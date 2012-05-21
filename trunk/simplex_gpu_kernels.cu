@@ -159,9 +159,9 @@ int simplex_gpu (float *arr, int width, int height) {
 
     // Normalization
     scale = arr[INDEX(pivotColumn, pivotRow)];
-	  DBGPRINT("Before normalize kernel");
+    DBGPRINT("Before normalize kernel");
     normalize_kernel<<<dimGridN, dimBlockN>>>(arr_d, scale, height, width, pivotRow);
-	  cudaThreadSynchronize();
+    cudaThreadSynchronize();
 
 
     // Check for CUDA errors
@@ -175,7 +175,7 @@ int simplex_gpu (float *arr, int width, int height) {
     float divider = arr[INDEX(pivotColumn, pivotRow)];
 
     // Row reduction
-	  DBGPRINT("Before row reduction kernel");
+    DBGPRINT("Before row reduction kernel");
 
     row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn); //, divider);
     // Synch here before the mem copy
@@ -198,8 +198,8 @@ int simplex_gpu (float *arr, int width, int height) {
     end = clock();
     total_time += (end-start);
 
-	  // Copy the host input data to the device 
-	  status = cudaMemcpy(arr, arr_d, bytes, cudaMemcpyDeviceToHost); 
+    // Copy the host input data to the device 
+    status = cudaMemcpy(arr, arr_d, bytes, cudaMemcpyDeviceToHost); 
     if (status != cudaSuccess) {
       cout << "Memcpy 2 failed: " << cudaGetErrorString(status) << endl;
       return -1;
@@ -334,7 +334,7 @@ int simplex_gpu_zero_copy (float *tgpu) {
     // Normalization
     DBGPRINT("Before normalize kernel");
     normalize_kernel<<<dimGridN, dimBlockN>>>(arr_d, scale, height, width, pivotRow);
-	  cudaThreadSynchronize();
+    cudaThreadSynchronize();
 
     // Check for CUDA errors
     status = cudaGetLastError();
@@ -348,9 +348,9 @@ int simplex_gpu_zero_copy (float *tgpu) {
     float divider = arr_h[INDEX(pivotColumn, pivotRow)];
 
     // Row reduction
-	  DBGPRINT("Before row reduction kernel");
+    DBGPRINT("Before row reduction kernel");
     row_reduce_kernel<<<dimGridRR, dimBlockRR>>>(arr_d, height, width, pivotRow, pivotColumn); //, divider);
-	  cudaThreadSynchronize();
+    cudaThreadSynchronize();
 
     // Check for CUDA errors
     status = cudaGetLastError();
